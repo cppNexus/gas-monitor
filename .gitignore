@@ -68,8 +68,8 @@ charts/*.svg
 !docs/images/*.jpg
 
 # Data and Backups
-data/
-data/*.json
+#data/
+#data/*.json
 data/*.db
 data/*.sqlite
 data/*.backup

@@ -33,7 +33,7 @@ charts/
 
 # Data (will be created in container)
 data/
-*.json
+#*.json
 *.db
 
 # Environment
