@@ -1,0 +1,16 @@
+services:
+  gas-monitor:
+    build: .
+    container_name: gas-monitor
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./charts:/app/charts
+      - ./data:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

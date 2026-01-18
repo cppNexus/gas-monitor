@@ -1,0 +1,64 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs (will be created in container)
+logs/
+*.log
+
+# Charts (will be created in container)
+charts/
+*.png
+*.jpg
+
+# Data (will be created in container)
+data/
+*.json
+*.db
+
+# Environment
+.env
+.env.local
+
+# Documentation
+*.md
+docs/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.bak
+*.cache
