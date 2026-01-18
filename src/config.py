@@ -148,7 +148,7 @@ class Config:
     def _validate_python_version(self):
         """Проверка версии Python"""
         if sys.version_info < (3, 9):
-            print("❌ Требуется Python 3.9 или выше")
+            print("Требуется Python 3.9 или выше")
             sys.exit(1)
     
     def _validate_config(self):
@@ -169,10 +169,10 @@ class Config:
             errors.append("Снайпер настроен небезопасно! Всегда используйте dry_run=true")
         
         if errors:
-            print("❌ Ошибки конфигурации:")
+            print("Ошибки конфигурации:")
             for error in errors:
                 print(f"  - {error}")
-            print("\n📝 Исправьте ошибки и перезапустите приложение")
+            print("\nИсправьте ошибки и перезапустите приложение")
             sys.exit(1)
     
     def _configure_networks(self) -> Dict[str, NetworkConfig]:

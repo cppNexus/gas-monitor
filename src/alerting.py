@@ -157,7 +157,7 @@ class MessageFormatter:
         
         # Добавляем рекомендацию
         if recommendation:
-            message += f"\n💡 <i>{recommendation}</i>"
+            message += f"\n<i>{recommendation}</i>"
         
         # Добавляем ссылку на explorer
         if network_config and network_config.explorer_url:

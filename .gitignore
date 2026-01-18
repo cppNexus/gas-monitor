@@ -51,10 +51,9 @@ venv.bak/
 .settings/
 
 # Logs
-logs/
-*.log
-*.log.*
 log/
+#*.log
+#*.log.*
 
 # Charts and Images
 charts/

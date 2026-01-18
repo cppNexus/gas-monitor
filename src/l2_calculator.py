@@ -18,10 +18,10 @@ try:
     from web3.providers import AsyncHTTPProvider
     
     WEB3_AVAILABLE = True
-    logger.info("✅ Web3 v7 доступен")
+    logger.info("Web3 v7 доступен")
     
 except ImportError as e:
-    logger.warning(f"❌ Web3 импорт не удался: {e}")
+    logger.warning(f"Web3 импорт не удался: {e}")
     WEB3_AVAILABLE = False
 
 # ABI для L2 контрактов

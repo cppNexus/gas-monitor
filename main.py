@@ -40,7 +40,7 @@ class Application:
     
     async def init(self):
         """Инициализация приложения"""
-        logger.info("🚀 Инициализация Gas Monitor")
+        logger.info("Инициализация Gas Monitor")
         
         # Выводим сводку конфигурации
         config.print_summary()
@@ -64,13 +64,16 @@ class Application:
         """Регистрация обработчиков сигналов для graceful shutdown"""
         loop = asyncio.get_event_loop()
         
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(
-                sig,
-                lambda s=sig: asyncio.create_task(self.shutdown(s))
-            )
-        
-        logger.debug("Обработчики сигналов зарегистрированы")
+        if sys.platform != "win32":
+            # только на *nix
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(
+                    sig,
+                    lambda s=sig: asyncio.create_task(self.shutdown(s))
+                )
+            logger.debug("Обработчики сигналов зарегистрированы")
+        else:
+            logger.debug("Регистрация сигналов пропущена на Windows")
     
     async def run(self):
         """Запуск основного цикла приложения"""

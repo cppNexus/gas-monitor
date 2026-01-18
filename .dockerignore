@@ -23,8 +23,8 @@ __pycache__/
 *.swo
 
 # Logs (will be created in container)
-logs/
-*.log
+log/
+#*.log
 
 # Charts (will be created in container)
 charts/
