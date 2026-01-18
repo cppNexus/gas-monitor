@@ -74,7 +74,7 @@ data/*.db
 data/*.sqlite
 data/*.backup
 *.backup
-history_backup.json
+#history_backup.json
 
 # Temporary files
 *.tmp
