@@ -1,5 +1,5 @@
 """
-Модуль для генерации графиков с ценами газа.
+Module for generating graphs with gas prices.
 """
 
 import asyncio
@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import logging
 
 import matplotlib
-matplotlib.use('Agg')  # Для работы без GUI
+matplotlib.use('Agg')  # For work without GUI
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -21,13 +21,13 @@ from src.models import GasData
 logger = logging.getLogger(__name__)
 
 class ChartGenerator:
-    """Генератор графиков"""
+    """Graph generator"""
     
     def __init__(self):
         self.chart_dir = "charts"
         self.ensure_chart_dir()
         
-        # Стили графиков
+        # Chart styles
         self.styles = {
             "ethereum": {"color": "#627eea", "name": "Ethereum"},
             "arbitrum": {"color": "#28a0f0", "name": "Arbitrum"},
@@ -37,23 +37,22 @@ class ChartGenerator:
         }
     
     def ensure_chart_dir(self):
-        """Создание директории для графиков"""
+        """Creating a directory for graphs"""
         os.makedirs(self.chart_dir, exist_ok=True)
     
     async def generate_network_chart(self, 
                                    network: str, 
                                    history: List[GasData]) -> Optional[str]:
         """
-        Генерация графика для конкретной сети.
-        
-        Возвращает путь к файлу или None при ошибке.
+        Generate a graph for a specific network.
+        Returns the file path or None on error.
         """
         try:
             if not history:
-                logger.warning(f"Нет данных для графика {network}")
+                logger.warning(f"No data for graph {network}")
                 return None
             
-            # Подготавливаем данные
+            # Preparing the data
             timestamps = []
             base_fees = []
             safe_fees = []  # p25
@@ -71,10 +70,10 @@ class ChartGenerator:
                 if fast is not None:
                     fast_fees.append(fast)
             
-            # Создаем график
+            # Create a schedule
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
             
-            # График 1: Базовые и общие комиссии
+            # Chart 1: Basic and Total Fees
             ax1.plot(timestamps, base_fees, 
                     label="Base Fee", 
                     color='blue', 
@@ -97,7 +96,7 @@ class ChartGenerator:
                         linestyle='--',
                         alpha=0.7)
             
-            # Заполняем область между safe и fast
+            # Filling the space between safe and fast
             if safe_fees and fast_fees and len(safe_fees) == len(fast_fees):
                 ax1.fill_between(timestamps, safe_fees, fast_fees,
                                color='orange', alpha=0.2,
@@ -112,11 +111,11 @@ class ChartGenerator:
             ax1.legend(loc='upper left')
             ax1.grid(True, alpha=0.3)
             
-            # Форматирование времени
+            # Time formatting
             ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
             plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
             
-            # График 2: Приоритетные комиссии
+            # Chart 2: Priority Commissions
             if safe_fees and base_fees and len(safe_fees) == len(base_fees):
                 priority_safe = [s - b for s, b in zip(safe_fees, base_fees)]
                 ax2.plot(timestamps, priority_safe,
@@ -139,14 +138,14 @@ class ChartGenerator:
             ax2.legend(loc='upper left')
             ax2.grid(True, alpha=0.3)
             
-            # Форматирование времени
+            # Time formatting
             ax2.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
             plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
             
-            # Улучшаем layout
+            # Improving the layout
             plt.tight_layout()
             
-            # Сохраняем график
+            # Save the chart
             filename = f"{network}_gas_trend.png"
             filepath = os.path.join(self.chart_dir, filename)
             
@@ -156,28 +155,28 @@ class ChartGenerator:
             # Очищаем старые файлы
             await self.cleanup_old_charts()
             
-            logger.info(f"График сохранен: {filepath}")
+            logger.info(f"Chart saved: {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"Ошибка генерации графика для {network}: {e}")
+            logger.error(f"Error generating graph for {network}: {e}")
             return None
     
     async def generate_comparison_chart(self, all_history: Dict[str, List[GasData]]) -> Optional[str]:
         """
-        Генерация сравнительного графика для всех сетей.
+        Generate a comparative graph for all networks.
         """
         try:
-            # Собираем данные для сравнения
+            # Collecting data for comparison
             networks_data = {}
             
             for network, history in all_history.items():
                 if not history:
                     continue
                 
-                # Берем последние safe fees (p25)
+                # We take the last safe fees (p25)
                 safe_fees = []
-                for data in history[-100:]:  # Последние 100 точек
+                for data in history[-100:]:  # Last 100 points
                     safe = data.get_fee_for_percentile("p25")
                     if safe is not None:
                         safe_fees.append(safe)
@@ -186,7 +185,7 @@ class ChartGenerator:
                     networks_data[network] = safe_fees
             
             if not networks_data:
-                logger.warning("Нет данных для сравнительного графика")
+                logger.warning("No data available for comparison chart")
                 return None
             
             # Создаем график
@@ -227,16 +226,16 @@ class ChartGenerator:
             plt.savefig(filepath, dpi=150, bbox_inches='tight')
             plt.close(fig)
             
-            logger.info(f"Сравнительный график сохранен: {filepath}")
+            logger.info(f"Comparison chart saved: {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"Ошибка генерации сравнительного графика: {e}")
+            logger.error(f"Error generating comparison graph: {e}")
             return None
     
     async def generate_statistics_report(self, all_history: Dict[str, List[GasData]]) -> Optional[str]:
         """
-        Генерация отчета со статистикой.
+        Generating a report with statistics.
         """
         try:
             report_lines = []
@@ -317,15 +316,15 @@ class ChartGenerator:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(report_text)
             
-            logger.info(f"Отчет сохранен: {filepath}")
+            logger.info(f"The report has been saved: {filepath}")
             return filepath
             
         except Exception as e:
-            logger.error(f"Ошибка генерации отчета: {e}")
+            logger.error(f"Report generation error: {e}")
             return None
     
     async def cleanup_old_charts(self):
-        """Очистка старых графиков"""
+        """Clearing old charts"""
         try:
             pattern = os.path.join(self.chart_dir, "*.png")
             files = sorted(glob.glob(pattern), key=os.path.getmtime)
@@ -336,25 +335,25 @@ class ChartGenerator:
                 for file in files_to_delete:
                     try:
                         os.remove(file)
-                        logger.debug(f"Удален старый график: {file}")
+                        logger.debug(f"The old schedule has been removed: {file}")
                     except Exception as e:
-                        logger.error(f"Ошибка удаления файла {file}: {e}")
+                        logger.error(f"Error deleting file {file}: {e}")
                 
-                logger.info(f"Удалено {len(files_to_delete)} старых графиков")
+                logger.info(f"Deleted {len(files_to_delete)} old charts")
                 
         except Exception as e:
-            logger.error(f"Ошибка очистки графиков: {e}")
+            logger.error(f"Error clearing charts: {e}")
     
     async def cleanup(self):
-        """Очистка ресурсов"""
-        # Закрываем все фигуры matplotlib
+        """Resource cleaning"""
+        # Close all matplotlib figures
         plt.close('all')
 
-# Глобальный инстанс генератора графиков
+# Global Graph Generator Instance
 _chart_generator: Optional[ChartGenerator] = None
 
 async def get_chart_generator() -> ChartGenerator:
-    """Получение глобального инстанса генератора графиков"""
+    """Getting a global instance of the graph generator"""
     global _chart_generator
     
     if _chart_generator is None:
@@ -363,7 +362,7 @@ async def get_chart_generator() -> ChartGenerator:
     return _chart_generator
 
 async def cleanup_charts():
-    """Очистка глобального инстанса генератора графиков"""
+    """Cleaning up the global graph generator instance"""
     global _chart_generator
     
     if _chart_generator:

@@ -1,6 +1,6 @@
 """
-Модуль для отправки алертов через Telegram.
-Управляет форматом сообщений и подтверждениями.
+A module for sending alerts via Telegram.
+Manages message formats and confirmations.
 """
 
 import asyncio
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Alert:
-    """Данные алерта"""
+    """Alert data"""
     network: str
     alert_type: str
     value: float
@@ -31,36 +31,36 @@ class Alert:
     
     @property
     def priority_fee(self) -> float:
-        """Приоритетная комиссия"""
+        """Priority Commission"""
         return self.value - self.base_fee
     
     @property
     def alert_name(self) -> str:
-        """Название алерта"""
+        """Alert name"""
         return self.alert_type.replace("_", " ").title()
 
 class AlertManager:
-    """Менеджер алертов"""
+    """Alert Manager"""
     
     def __init__(self):
         self.session: Optional[aiohttp.ClientSession] = None
         self.message_formatter = MessageFormatter()
         
     async def init_session(self):
-        """Инициализация HTTP сессии"""
+        """Initializing an HTTP session"""
         if not self.session:
             self.session = aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=10)
             )
     
     async def cleanup(self):
-        """Очистка ресурсов"""
+        """Resource cleaning"""
         if self.session:
             await self.session.close()
             self.session = None
     
     async def send_alert(self, **kwargs) -> bool:
-        """Отправка алерта"""
+        """Sending an alert"""
         try:
             # Создаем объект алерта
             alert = Alert(**kwargs, timestamp=time.time())
@@ -72,20 +72,20 @@ class AlertManager:
             success = await self._send_telegram_message(message)
             
             if success:
-                logger.info(f"Алерт отправлен: {alert.network} {alert.alert_type}")
+                logger.info(f"Alert sent: {alert.network} {alert.alert_type}")
             else:
-                logger.warning(f"Не удалось отправить алерт: {alert.network}")
+                logger.warning(f"Failed to send alert: {alert.network}")
             
             return success
             
         except Exception as e:
-            logger.error(f"Ошибка отправки алерта: {e}")
+            logger.error(f"Error sending alert: {e}")
             return False
     
     async def _send_telegram_message(self, message: str) -> bool:
-        """Отправка сообщения в Telegram"""
+        """Sending a message in Telegram"""
         if not config.telegram_bot_token or not config.telegram_chat_id:
-            logger.error("Не настроен Telegram бот")
+            logger.error("The Telegram bot is not configured.")
             return False
         
         await self.init_session()
@@ -109,32 +109,32 @@ class AlertManager:
                     return False
                     
         except Exception as e:
-            logger.error(f"Ошибка отправки в Telegram: {e}")
+            logger.error(f"Error sending to Telegram: {e}")
             return False
 
 class MessageFormatter:
-    """Форматирование сообщений для Telegram"""
+    """Formatting messages for Telegram"""
     
     # Emoji для разных типов алертов
     EMOJI_MAP = {
-        "ultra_low": "🚀",
+        "ultra_low": "💥",
         "low": "✅",
         "medium": "⚠️",
         "high": "🔥",
-        "ultra_high": "💥"
+        "ultra_high": "🚀"
     }
     
     # Рекомендации
     RECOMMENDATIONS = {
-        "ultra_low": "Отличное время для транзакций!",
-        "low": "Хорошее время для транзакций",
-        "medium": "Умеренная комиссия, можно подождать",
-        "high": "Высокая комиссия, избегайте если возможно",
-        "ultra_high": "Очень высокая комиссия, подождите"
+        "ultra_low": "Great time for transactions!",
+        "low": "Good time for transactions",
+        "medium": "Moderate fees, you can wait",
+        "high": "High fees, avoid if possible",
+        "ultra_high": "Very high fees, please wait"
     }
     
     def format_alert(self, alert: Alert) -> str:
-        """Форматирование алерта"""
+        """Alert formatting"""
         emoji = self.EMOJI_MAP.get(alert.alert_type, "⛽")
         recommendation = self.RECOMMENDATIONS.get(alert.alert_type, "")
         
@@ -167,7 +167,7 @@ class MessageFormatter:
         return message
 
 class ConfirmationManager:
-    """Менеджер подтверждений для снайпера"""
+    """Confirmation Manager for Sniper"""
     
     def __init__(self, ttl_seconds: int = 30):
         self.ttl = ttl_seconds
@@ -175,7 +175,7 @@ class ConfirmationManager:
         self.locks: Dict[str, asyncio.Lock] = {}
     
     async def create_confirmation(self, tx_data: Dict, network: str) -> Tuple[str, float]:
-        """Создание запроса на подтверждение"""
+        """Creating a confirmation request"""
         # Генерируем уникальный ID
         tx_id = hashlib.sha256(
             f"{network}{tx_data}{time.time()}".encode()
@@ -201,7 +201,7 @@ class ConfirmationManager:
         return full_id, self.ttl
     
     async def confirm(self, confirmation_id: str) -> Optional[Dict]:
-        """Подтверждение запроса"""
+        """Confirm request"""
         if confirmation_id not in self.locks:
             return None
         
@@ -224,7 +224,7 @@ class ConfirmationManager:
             return request
     
     async def _expire_confirmation(self, confirmation_id: str):
-        """Фоновая задача для истечения запроса"""
+        """Background task for request expiration"""
         await asyncio.sleep(self.ttl)
         
         if confirmation_id in self.pending_confirmations:
@@ -235,7 +235,7 @@ class ConfirmationManager:
                     logger.debug(f"Confirmation expired: {confirmation_id}")
     
     async def cleanup(self):
-        """Очистка истекших запросов"""
+        """Clearing expired requests"""
         now = time.time()
         expired = []
         

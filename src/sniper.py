@@ -1,6 +1,6 @@
 """
-Изолированный модуль снайпера для автоматических транзакций.
-ВНИМАНИЕ: Использовать с осторожностью, только с dry-run режимом!
+Isolated sniper module for automated transactions.
+WARNING: Use with caution and only in dry-run mode!
 """
 
 import asyncio
@@ -24,12 +24,11 @@ try:
     WEB3_AVAILABLE = True
 except ImportError:
     WEB3_AVAILABLE = False
-    logger.warning("Web3 не доступен, снайпер работать не будет")
-
+    logger.warning("Web3 is not available, the sniper will not work")
 
 @dataclass
 class SniperConfig:
-    """Конфигурация снайпера"""
+    """Sniper configuration"""
     dry_run: bool = True
     max_gas_multiplier: float = 1.2
     require_confirmation: bool = True
@@ -39,12 +38,12 @@ class SniperConfig:
 
 class TransactionSniper:
     """
-    Снайпер для автоматических транзакций при низких ценах газа.
-    
-    ВНИМАНИЕ:
-    - Всегда используйте dry-run режим для тестирования
-    - Никогда не храните приватные ключи в коде
-    - Используйте отдельный кошелек с минимальными средствами
+    Sniper for automatic transactions at low gas prices.
+
+    WARNING:
+    - Always use dry-run mode for testing
+    - Never store private keys in the code
+    - Use a separate wallet with minimal funds
     """
     
     def __init__(self, network: str):
@@ -74,16 +73,16 @@ class TransactionSniper:
         }
     
     async def init(self):
-        """Инициализация снайпера"""
+        """Sniper initialization"""
         if not WEB3_AVAILABLE:
-            logger.error("Web3 не установлен, снайпер не может быть инициализирован")
+            logger.error("Web3 is not installed, sniper cannot be initialized")
             return
         
         try:
             # Инициализация Web3
             network_config = config.networks.get(self.network)
             if not network_config or not network_config.rpc_urls:
-                raise ValueError(f"Нет RPC для сети {self.network}")
+                raise ValueError(f"No RPC for network {self.network}")
             
             rpc_url = network_config.rpc_urls[0]
             self.web3 = AsyncWeb3(AsyncHTTPProvider(rpc_url))
@@ -91,26 +90,26 @@ class TransactionSniper:
             # Проверка соединения
             is_connected = await self.web3.is_connected()
             if not is_connected:
-                raise ConnectionError(f"Не удалось подключиться к {self.network}")
+                raise ConnectionError(f"Failed to connect to {self.network}")
             
-            logger.info(f"Снайпер инициализирован для сети {self.network}")
-            logger.info(f"Режим: {'DRY-RUN' if self.config.dry_run else 'REAL'}")
+            logger.info(f"Sniper initialized for network {self.network}")
+            logger.info(f"Mode: {'DRY-RUN' if self.config.dry_run else 'REAL'}")
             
         except Exception as e:
-            logger.error(f"Ошибка инициализации снайпера: {e}")
+            logger.error(f"Sniper initialization error: {e}")
             raise
     
     async def cleanup(self):
-        """Очистка ресурсов"""
+        """Resource cleaning"""
         await self.confirmation_manager.cleanup()
     
     async def check_opportunity(self, 
                                current_gas_price: float,
                                target_gas_price: float) -> Tuple[bool, float]:
         """
-        Проверка возможности для транзакции.
-        
-        Возвращает (есть_возможность, экономия_в_Gwei)
+        Checking the feasibility of a transaction.
+
+        Returns (is_feasible, savings_in_Gwei)
         """
         if current_gas_price > target_gas_price:
             return False, 0.0
@@ -125,7 +124,7 @@ class TransactionSniper:
         return True, savings
     
     async def get_stats(self) -> Dict:
-        """Получение статистики снайпера"""
+        """Getting sniper statistics"""
         return {
             **self.stats,
             "network": self.network,
@@ -139,7 +138,7 @@ class TransactionSniper:
 _sniper_instance: Optional[TransactionSniper] = None
 
 async def get_sniper(network: str = "ethereum") -> TransactionSniper:
-    """Получение глобального инстанса снайпера"""
+    """Obtaining a global sniper instance"""
     global _sniper_instance
     
     if _sniper_instance is None or _sniper_instance.network != network:
@@ -149,7 +148,7 @@ async def get_sniper(network: str = "ethereum") -> TransactionSniper:
     return _sniper_instance
 
 async def cleanup_sniper():
-    """Очистка глобального инстанса снайпера"""
+    """Clearing the global sniper instance"""
     global _sniper_instance
     
     if _sniper_instance:

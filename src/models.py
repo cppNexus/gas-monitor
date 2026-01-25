@@ -1,5 +1,5 @@
 """
-Модели данных для Gas Monitor.
+Data Models for Gas Monitor.
 """
 
 from typing import Dict, Optional
@@ -8,22 +8,22 @@ from dataclasses import dataclass
 
 @dataclass
 class GasData:
-    """Данные о газе для одной сети"""
+    """Gas data for one network"""
     network: str
     timestamp: float
     block_number: int
     
-    # Цены в Gwei
+    # Prices in Gwei
     base_fee: float
     priority_fees: Dict[str, float]  # percentile -> priority
     total_fees: Dict[str, float]     # percentile -> total (base + priority)
     
-    # Дополнительная информация
-    l1_fee: Optional[float] = None  # Только для L2
-    l2_fee: Optional[float] = None  # Только для L2
+    # Additional information
+    l1_fee: Optional[float] = None  # Only for L2
+    l2_fee: Optional[float] = None  # Only for L2
     
     def to_dict(self):
-        """Конвертация в словарь"""
+        """Convert to dictionary"""
         return {
             "network": self.network,
             "timestamp": self.timestamp,
@@ -36,9 +36,9 @@ class GasData:
         }
     
     def get_fee_for_percentile(self, percentile: str) -> Optional[float]:
-        """Получение общей комиссии для процентиля"""
+        """Receive total commission for a percentile"""
         return self.total_fees.get(percentile)
     
     def get_priority_for_percentile(self, percentile: str) -> Optional[float]:
-        """Получение приоритетной комиссии для процентиля"""
+        """Earning a percentile priority commission"""
         return self.priority_fees.get(percentile)

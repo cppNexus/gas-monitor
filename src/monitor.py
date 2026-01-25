@@ -1,6 +1,6 @@
 """
-Основной модуль мониторинга газа.
-Собирает данные со всех сетей и управляет алертами.
+The main gas monitoring module.
+Collects data from all networks and manages alerts.
 """
 
 import asyncio
@@ -23,59 +23,59 @@ from src.models import GasData
 logger = logging.getLogger(__name__)
 
 class GasMonitor:
-    """Основной класс мониторинга"""
+    """Main monitoring class"""
     
     def __init__(self, 
                  alert_manager: AlertManager,
                  chart_generator: ChartGenerator):
         self.alert_manager = alert_manager
-        self.l2_calculator = None  # Инициализируется асинхронно
+        self.l2_calculator = None  # Initialized asynchronously
         self.chart_generator = chart_generator
         
-        # История данных
+        # Data history
         self.history: Dict[str, List[GasData]] = {}
         self.last_alert_times: Dict[str, float] = {}
         
-        # Сессия HTTP
+        # HTTP session
         self.session: Optional[aiohttp.ClientSession] = None
         
-        # Флаги управления
+        # Control flags
         self.is_running = False
         self.iteration = 0
         
-        # Инициализация истории
+        # Initializing history
         for network in config.networks:
             self.history[network] = []
     
     async def init_session(self):
-        """Инициализация HTTP сессии"""
+        """Initializing an HTTP session"""
         if not self.session:
             self.session = aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=30),
                 connector=aiohttp.TCPConnector(limit=20)
             )
-            logger.debug("HTTP сессия инициализирована")
+            logger.debug("HTTP session initialized")
         
         # Инициализируем L2 калькулятор
         if not self.l2_calculator:
             self.l2_calculator = await get_l2_calculator()
-            logger.debug("L2 калькулятор инициализирован")
+            logger.debug("L2 calculator initialized")
     
     async def stop(self):
-        """Остановка мониторинга"""
+        """Stop monitoring"""
         self.is_running = False
         
         if self.session:
             await self.session.close()
             self.session = None
-            logger.debug("HTTP сессия закрыта")
+            logger.debug("HTTP session closed")
     
     async def _rpc_call(self, 
                        rpc_url: str, 
                        method: str, 
                        params: list,
                        network: str = "unknown") -> Optional[Any]:
-        """Асинхронный вызов RPC с ретраями"""
+        """Asynchronous RPC call with retries"""
         if not self.session:
             await self.init_session()
         
@@ -92,13 +92,13 @@ class GasMonitor:
                     if response.status == 200:
                         data = await response.json()
                         if "error" in data:
-                            logger.error(f"RPC ошибка ({network}): {data['error']}")
+                            logger.error(f"RPC error ({network}): {data['error']}")
                             continue
                         return data.get("result")
                     else:
-                        logger.warning(f"HTTP {response.status} ({network}), попытка {attempt+1}")
+                        logger.warning(f"HTTP {response.status} ({network}), attempt {attempt+1}")
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                logger.warning(f"Сетевая ошибка ({network}), попытка {attempt+1}: {type(e).__name__}")
+                logger.warning(f"Network error ({network}), attempt {attempt+1}: {type(e).__name__}")
             
             if attempt < 2:
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
@@ -106,22 +106,23 @@ class GasMonitor:
         return None
     
     def _hex_to_gwei(self, hex_value: str) -> float:
-        """Конвертация hex в Gwei"""
+        """Convert hex to Gwei"""
         try:
             return int(hex_value, 16) / 1e9
         except (ValueError, TypeError):
             return 0.0
     
     async def _get_gas_data_for_network(self, network_name: str) -> Optional[GasData]:
-        """Получение данных о газе для конкретной сети"""
+        """Obtaining gas data for a specific network"""
+        """Getting gaze data for a specific network"""
         network_config = config.networks[network_name]
         
-        # Пробуем все RPC endpoints
+        # We try all RPC endpoints
         for rpc_url in network_config.rpc_urls:
             if not rpc_url:
                 continue
             
-            # Получаем данные через eth_feeHistory
+            # We obtain data via eth_feeHistory
             result = await self._rpc_call(
                 rpc_url,
                 "eth_feeHistory",
@@ -169,13 +170,13 @@ class GasMonitor:
                 return gas_data
                 
             except (KeyError, IndexError, ValueError) as e:
-                logger.error(f"Ошибка парсинга ({network_name}): {e}")
+                logger.error(f"Parsing error ({network_name}): {e}")
                 continue
         
         return None
     
     def _update_history(self, gas_data: GasData):
-        """Обновление истории данных"""
+        """Updating data history"""
         network = gas_data.network
         self.history[network].append(gas_data)
         
@@ -192,12 +193,12 @@ class GasMonitor:
             self.history[network] = self.history[network][-max_history:]
     
     async def _process_network(self, network_name: str) -> Optional[GasData]:
-        """Обработка одной сети"""
+        """Processing one network"""
         try:
             # Получаем данные
             gas_data = await self._get_gas_data_for_network(network_name)
             if not gas_data:
-                logger.warning(f"Не удалось получить данные для {network_name}")
+                logger.warning(f"Failed to retrieve data for {network_name}")
                 return None
             
             # Обновляем историю
@@ -212,11 +213,11 @@ class GasMonitor:
             return gas_data
             
         except Exception as e:
-            logger.error(f"Ошибка обработки сети {network_name}: {e}")
+            logger.error(f"Network processing error {network_name}: {e}")
             return None
     
     def _log_gas_data(self, gas_data: GasData):
-        """Логирование данных о газе"""
+        """Logging gas data"""
         network_config = config.networks[gas_data.network]
         
         # Форматируем строку
@@ -230,7 +231,7 @@ class GasMonitor:
         logger.info(log_line)
     
     async def _check_alerts(self, gas_data: GasData):
-        """Проверка триггеров для алертов"""
+        """Checking triggers for alerts"""
         network_config = config.networks[gas_data.network]
         thresholds = network_config.gas_thresholds
         
@@ -282,7 +283,7 @@ class GasMonitor:
                     self.last_alert_times[key] = now
     
     async def _generate_charts(self):
-        """Генерация графиков"""
+        """Generating graphs"""
         if not config.charts["enabled"]:
             return
         
@@ -294,10 +295,10 @@ class GasMonitor:
                         self.history[network_name]
                     )
         except Exception as e:
-            logger.error(f"Ошибка генерации графиков: {e}")
+            logger.error(f"Error generating graphs: {e}")
     
     async def _save_history(self):
-        """Сохранение истории в файл"""
+        """Saving history to a file"""
         try:
             # Конвертируем историю в JSON-сериализуемый формат
             serializable = {}
@@ -307,19 +308,19 @@ class GasMonitor:
             with open("data/history_backup.json", "w") as f:
                 json.dump(serializable, f, indent=2, default=str)
             
-            logger.debug("История сохранена")
+            logger.debug("History saved")
         except Exception as e:
-            logger.error(f"Ошибка сохранения истории: {e}")
+            logger.error(f"Error saving history: {e}")
     
     async def run(self):
-        """Основной цикл мониторинга"""
+        """Basic monitoring cycle"""
         self.is_running = True
         self.iteration = 0
         
         # Инициализация сессии
         await self.init_session()
         
-        logger.info("Мониторинг запущен")
+        logger.info("Monitoring has been launched")
         
         # Время последней генерации графиков
         last_chart_time = 0
@@ -331,7 +332,7 @@ class GasMonitor:
                 iteration_start = time.time()
                 
                 logger.info(f"\n{'='*60}")
-                logger.info(f"Итерация {self.iteration} - {datetime.now().strftime('%H:%M:%S')}")
+                logger.info(f"Iteration {self.iteration} - {datetime.now().strftime('%H:%M:%S')}")
                 
                 # Обрабатываем все сети параллельно
                 tasks = [
@@ -343,12 +344,12 @@ class GasMonitor:
                 
                 # Подсчет успешных
                 successful = sum(1 for r in results if r is not None and not isinstance(r, Exception))
-                logger.info(f"Успешно: {successful}/{len(results)} сетей")
+                logger.info(f"Successfully: {successful}/{len(results)} networks")
                 
                 # Генерация графиков раз в заданный интервал
                 now = time.time()
                 if config.charts["enabled"] and now - last_chart_time > config.charts["update_interval"]:
-                    logger.info("Генерация графиков...")
+                    logger.info("Generating graphs...")
                     await self._generate_charts()
                     last_chart_time = now
                 
@@ -364,12 +365,12 @@ class GasMonitor:
                 if sleep_time > 0:
                     await asyncio.sleep(sleep_time)
                 else:
-                    logger.warning(f"Итерация заняла {elapsed:.2f}с, больше чем CHECK_INTERVAL")
+                    logger.warning(f"The iteration took {elapsed:.2f}sec, more than CHECK_INTERVAL")
                     
         except asyncio.CancelledError:
-            logger.info("Мониторинг отменен")
+            logger.info("Monitoring canceled")
         except Exception as e:
-            logger.error(f"Ошибка в основном цикле: {e}")
+            logger.error(f"Error in the main loop: {e}")
             raise
         finally:
             # Сохраняем историю при завершении

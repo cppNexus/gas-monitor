@@ -1,6 +1,6 @@
 """
-Профессиональный калькулятор L1 комиссий для L2 сетей.
-Использует реальные контракты и формулы, а не приближения.
+A professional L1 fee calculator for L2 networks.
+Uses real contracts and formulas, not approximations.
 """
 
 import asyncio
@@ -12,19 +12,19 @@ from src.config import config
 
 logger = logging.getLogger(__name__)
 
-# Импорты для web3 v7
+# Imports for web3 v7
 try:
     from web3 import AsyncWeb3
     from web3.providers import AsyncHTTPProvider
     
     WEB3_AVAILABLE = True
-    logger.info("Web3 v7 доступен")
+    logger.info("Web3 v7 is available")
     
 except ImportError as e:
-    logger.warning(f"Web3 импорт не удался: {e}")
+    logger.warning(f"Web3 import failed: {e}")
     WEB3_AVAILABLE = False
 
-# ABI для L2 контрактов
+# ABI for L2 contracts
 ARB_GAS_INFO_ABI = [
     {
         "inputs": [],
@@ -75,7 +75,7 @@ OPTIMISM_GAS_ORACLE_ABI = [
 
 @dataclass
 class L1FeeData:
-    """Точные данные о L1 комиссии"""
+    """Accurate data on L1 commission"""
     network: str
     l1_gas_price_wei: int
     l1_base_fee_wei: int
@@ -85,19 +85,19 @@ class L1FeeData:
     
     @property
     def l1_fee_gwei(self) -> float:
-        """L1 комиссия в Gwei"""
+        """L1 commission in Gwei"""
         return self.l1_fee_wei / 1e9
     
     @property
     def scalar_float(self) -> float:
-        """Скаляр как float"""
+        """Scalar as float"""
         return self.scalar / 1_000_000
 
 
 class L2FeeCalculator:
     """
-    Реальный калькулятор L1 комиссий для L2 сетей.
-    Использует контракты и точные формулы.
+    A real-world L1 fee calculator for L2 networks.
+    Uses contracts and precise formulas.
     """
     
     CONTRACT_ADDRESSES = {
@@ -119,9 +119,9 @@ class L2FeeCalculator:
         self.web3_available = WEB3_AVAILABLE
         
     async def init_clients(self):
-        """Инициализация Web3 клиентов для всех сетей"""
+        """Initializing Web3 clients for all networks"""
         if not WEB3_AVAILABLE:
-            logger.warning("Web3 не доступен, L2 калькулятор работает в упрощенном режиме")
+            logger.warning("Web3 is not available, L2 calculator works in simplified mode")
             return
         
         for network in ["arbitrum", "optimism", "base"]:
@@ -132,23 +132,23 @@ class L2FeeCalculator:
                     self.web3_clients[network] = AsyncWeb3(
                         AsyncHTTPProvider(rpc_url, request_kwargs={'timeout': 10})
                     )
-                    logger.info(f"Web3 клиент для {network} инициализирован")
+                    logger.info(f"Web3 client for {network} initialized")
                 except Exception as e:
-                    logger.error(f"Ошибка инициализации Web3 для {network}: {e}")
+                    logger.error(f"Web3 initialization error for {network}: {e}")
         
-        logger.info(f"Инициализировано Web3 клиентов: {len(self.web3_clients)}")
+        logger.info(f"Web3 clients initialized: {len(self.web3_clients)}")
     
     async def cleanup(self):
-        """Очистка ресурсов"""
+        """Resource cleaning"""
         self.web3_clients.clear()
         self.cache.clear()
     
     async def get_current_l1_params(self, network: str) -> Dict:
         """
-        Получение текущих параметров L1 для сети.
-        Без расчета комиссии для конкретной транзакции.
+        Obtaining current L1 network parameters.
+        Without calculating the fee for a specific transaction.
         """
-        # Проверяем кэш
+        # Checking the cache
         cache_key = f"{network}_params"
         if cache_key in self.cache:
             cached = self.cache[cache_key]
@@ -157,7 +157,7 @@ class L2FeeCalculator:
         
         try:
             if not WEB3_AVAILABLE or network not in self.web3_clients:
-                # Fallback на типичные значения
+                # Fallback to typical values
                 return self._get_fallback_params(network)
             
             web3 = self.web3_clients[network]
@@ -169,7 +169,7 @@ class L2FeeCalculator:
             else:
                 result = {}
             
-            # Кэшируем
+            # Let's cache
             self.cache[cache_key] = {
                 'data': result,
                 'timestamp': asyncio.get_event_loop().time()
@@ -178,18 +178,18 @@ class L2FeeCalculator:
             return result
             
         except Exception as e:
-            logger.error(f"Ошибка получения параметров L1 для {network}: {e}")
+            logger.error(f"Error getting L1 parameters for {network}: {e}")
             return self._get_fallback_params(network)
     
     async def _get_arbitrum_params(self, web3: AsyncWeb3) -> Dict:
-        """Получение параметров для Arbitrum"""
+        """Getting parameters for Arbitrum"""
         try:
             arb_gas_info = web3.eth.contract(
                 address=web3.to_checksum_address(self.CONTRACT_ADDRESSES["arbitrum"]["arb_gas_info"]),
                 abi=ARB_GAS_INFO_ABI
             )
             
-            # Получаем параметры параллельно
+            # We receive parameters in parallel
             l1_gas_price, l1_base_fee = await asyncio.gather(
                 arb_gas_info.functions.getL1GasPriceEstimate().call(),
                 arb_gas_info.functions.getL1BaseFeeEstimate().call()
@@ -206,11 +206,11 @@ class L2FeeCalculator:
             }
             
         except Exception as e:
-            logger.error(f"Ошибка получения параметров Arbitrum: {e}")
+            logger.error(f"Error retrieving Arbitrum parameters: {e}")
             raise
     
     async def _get_optimism_params(self, web3: AsyncWeb3, network: str) -> Dict:
-        """Получение параметров для Optimism/Base"""
+        """Getting parameters for Optimism/Base"""
         try:
             gas_oracle = web3.eth.contract(
                 address=web3.to_checksum_address(self.CONTRACT_ADDRESSES[network]["gas_price_oracle"]),
@@ -236,11 +236,11 @@ class L2FeeCalculator:
             }
             
         except Exception as e:
-            logger.error(f"Ошибка получения параметров {network}: {e}")
+            logger.error(f"Error getting parameters {network}: {e}")
             raise
     
     def _get_fallback_params(self, network: str) -> Dict:
-        """Fallback параметры если Web3 недоступен"""
+        """Fallback parameters if Web3 is unavailable"""
         fallbacks = {
             "arbitrum": {
                 "l1_gas_price_gwei": 20.0,
@@ -271,8 +271,8 @@ class L2FeeCalculator:
         tx_type: str = "transfer"
     ) -> float:
         """
-        Оценка L1 комиссии для мониторинга.
-        Возвращает L1 комиссию в Gwei для типовых операций.
+        L1 fee estimation for monitoring.
+        Returns the L1 fee in Gwei for typical transactions.
         """
         try:
             params = await self.get_current_l1_params(network)
@@ -306,7 +306,7 @@ class L2FeeCalculator:
             return 0.0
             
         except Exception as e:
-            logger.error(f"Ошибка оценки L1 комиссии для {network}: {e}")
+            logger.error(f"L1 commission estimation error for {network}: {e}")
             return {"arbitrum": 0.5, "optimism": 0.3, "base": 0.3}.get(network, 0.0)
 
 
@@ -314,7 +314,7 @@ class L2FeeCalculator:
 _l2_calculator: Optional[L2FeeCalculator] = None
 
 async def get_l2_calculator() -> L2FeeCalculator:
-    """Получение инстанса калькулятора"""
+    """Getting a calculator instance"""
     global _l2_calculator
     
     if _l2_calculator is None:

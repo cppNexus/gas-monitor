@@ -1,7 +1,6 @@
 """
-Главный конфигурационный файл Gas Monitor.
-Все настройки в одном месте с приоритетом: переменные окружения → значения по умолчанию.
-Протестировано и готово к продакшену.
+Gas Monitor's main configuration file.
+All settings in one place, with priority: environment variables → default values.
 """
 
 import os
@@ -11,46 +10,46 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
-# Загружаем переменные окружения из .env
+# Loading environment variables from .env
 load_dotenv()
 
 # ============================================================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# AUXILIARY FUNCTIONS
 # ============================================================================
 
 def get_env_bool(key: str, default: bool = False) -> bool:
-    """Получение булевой переменной из окружения"""
+    """Getting a Boolean variable from the environment"""
     value = os.getenv(key, str(default)).lower()
     return value in ('true', '1', 'yes', 't', 'y')
 
 def get_env_int(key: str, default: int) -> int:
-    """Получение целочисленной переменной из окружения"""
+    """Getting an integer variable from the environment"""
     try:
         return int(os.getenv(key, str(default)))
     except (ValueError, TypeError):
         return default
 
 def get_env_float(key: str, default: float) -> float:
-    """Получение дробной переменной из окружения"""
+    """Getting a fractional variable from the environment"""
     try:
         return float(os.getenv(key, str(default)))
     except (ValueError, TypeError):
         return default
 
 def get_env_list(key: str, default: List[str]) -> List[str]:
-    """Получение списка из переменной окружения"""
+    """Getting a list from an environment variable"""
     value = os.getenv(key, '')
     if not value:
         return default
     return [item.strip() for item in value.split(',') if item.strip()]
 
 # ============================================================================
-# КЛАССЫ КОНФИГУРАЦИИ
+# CONFIGURATION CLASSES
 # ============================================================================
 
 @dataclass
 class NetworkConfig:
-    """Конфигурация сети"""
+    """Network configuration"""
     name: str
     chain_id: int
     native_token: str
@@ -70,7 +69,7 @@ class NetworkConfig:
 
 @dataclass
 class TelegramConfig:
-    """Конфигурация Telegram бота"""
+    """Telegram bot configuration"""
     bot_token: str
     chat_id: str
     parse_mode: str = "HTML"
@@ -78,12 +77,12 @@ class TelegramConfig:
     message_timeout: int = 10
     
     def is_configured(self) -> bool:
-        """Проверка, настроен ли Telegram"""
+        """Checking if Telegram is configured"""
         return bool(self.bot_token and self.chat_id)
 
 @dataclass
 class SniperConfig:
-    """Конфигурация снайпера"""
+    """Sniper configuration"""
     enabled: bool = False
     dry_run: bool = True
     require_confirmation: bool = True
@@ -93,14 +92,14 @@ class SniperConfig:
     private_key: Optional[str] = None
     
     def is_safe(self) -> bool:
-        """Проверка безопасности конфигурации снайпера"""
+        """Checking the security of the sniper configuration"""
         if not self.enabled:
             return True
         return self.dry_run and not self.private_key
 
 @dataclass
 class LoggingConfig:
-    """Конфигурация логирования"""
+    """Logging configuration"""
     level: str
     file_path: str
     max_size_mb: int
@@ -112,17 +111,17 @@ class LoggingConfig:
         return self.max_size_mb * 1024 * 1024
 
 # ============================================================================
-# ГЛАВНЫЙ КЛАСС КОНФИГУРАЦИИ
+# MAIN CONFIGURATION CLASS
 # ============================================================================
 
 class Config:
-    """Главный класс конфигурации приложения"""
+    """The main application configuration class"""
     
     def __init__(self):
-        # Валидация Python версии
+        # Python version validation
         self._validate_python_version()
         
-        # Секции конфигурации
+        # Configuration sections
         self.networks = self._configure_networks()
         self.telegram = self._configure_telegram()
         self.sniper = self._configure_sniper()
@@ -131,13 +130,13 @@ class Config:
         self.charts = self._configure_charts()
         self.l2_settings = self._configure_l2_settings()
         
-        # Загрузка RPC endpoints
+        # Loading RPC endpoints
         self._load_rpc_endpoints()
         
-        # Валидация
+        # Validation
         self._validate_config()
         
-        # Shortcuts для обратной совместимости
+        # Shortcuts for backward compatibility
         self.telegram_bot_token = self.telegram.bot_token
         self.telegram_chat_id = self.telegram.chat_id
         self.telegram_parse_mode = self.telegram.parse_mode
@@ -146,37 +145,37 @@ class Config:
         self.max_chart_files = self.charts["max_chart_files"]
     
     def _validate_python_version(self):
-        """Проверка версии Python"""
+        """Checking the Python version"""
         if sys.version_info < (3, 9):
-            print("Требуется Python 3.9 или выше")
+            print("Python 3.9 or higher is required")
             sys.exit(1)
     
     def _validate_config(self):
-        """Валидация всей конфигурации"""
+        """Validation of the entire configuration"""
         errors = []
         
         # Проверка Telegram
         if not self.telegram.is_configured():
-            errors.append("Telegram bot не настроен. Укажите TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID")
+            errors.append("The Telegram bot is not configured. Please enter TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.")
         
         # Проверка RPC endpoints
         for network_name, cfg in self.networks.items():
             if not cfg.rpc_urls:
-                errors.append(f"Нет RPC endpoints для сети {network_name}")
+                errors.append(f"There are no RPC endpoints for the network. {network_name}")
         
         # Проверка снайпера
         if not self.sniper.is_safe():
-            errors.append("Снайпер настроен небезопасно! Всегда используйте dry_run=true")
+            errors.append("Sniper is not set up safely! Always use: dry_run=true")
         
         if errors:
-            print("Ошибки конфигурации:")
+            print("Configuration errors:")
             for error in errors:
                 print(f"  - {error}")
-            print("\nИсправьте ошибки и перезапустите приложение")
+            print("\nFix the errors and restart the application.")
             sys.exit(1)
     
     def _configure_networks(self) -> Dict[str, NetworkConfig]:
-        """Конфигурация всех поддерживаемых сетей"""
+        """Configuration of all supported networks"""
         networks = {}
         
         # Ethereum Mainnet
@@ -267,8 +266,8 @@ class Config:
         return networks
     
     def _load_rpc_endpoints(self):
-        """Загрузка RPC endpoints из переменных окружения"""
-        # Маппинг сетей на переменные окружения
+        """Loading RPC endpoints from environment variables"""
+    # Mapping networks to environment variables
         env_mapping = {
             "ethereum": ["ETHEREUM", "ETH"],
             "arbitrum": ["ARBITRUM", "ARB"],
@@ -301,7 +300,7 @@ class Config:
             cfg.rpc_urls = rpc_urls
     
     def _get_public_rpc_endpoints(self, network: str) -> List[str]:
-        """Получение публичных RPC endpoints"""
+        """Getting public RPC endpoints"""
         public_rpcs = {
             "ethereum": [
                 "https://rpc.ankr.com/eth",
@@ -347,7 +346,7 @@ class Config:
         )
     
     def _configure_sniper(self) -> SniperConfig:
-        """Конфигурация снайпера"""
+        """Sniper configuration"""
         return SniperConfig(
             enabled=get_env_bool("ENABLE_SNIPER", False),
             dry_run=get_env_bool("SNIPER_DRY_RUN", True),
@@ -359,7 +358,7 @@ class Config:
         )
     
     def _configure_logging(self) -> LoggingConfig:
-        """Конфигурация логирования"""
+        """Logging configuration"""
         return LoggingConfig(
             level=os.getenv("LOG_LEVEL", "INFO").upper(),
             file_path=os.getenv("LOG_FILE", "logs/gas_monitor.log"),
@@ -369,7 +368,7 @@ class Config:
         )
     
     def _configure_monitoring(self) -> Dict[str, Any]:
-        """Конфигурация параметров мониторинга"""
+        """Configuring monitoring parameters"""
         return {
             "check_interval": get_env_int("CHECK_INTERVAL", 12),
             "alert_cooldown": get_env_int("ALERT_COOLDOWN", 300),
@@ -382,7 +381,7 @@ class Config:
         }
     
     def _configure_charts(self) -> Dict[str, Any]:
-        """Конфигурация генерации графиков"""
+        """Configuration of graph generation"""
         return {
             "enabled": get_env_bool("ENABLE_CHARTS", True),
             "update_interval": get_env_int("CHART_UPDATE_INTERVAL", 3600),
@@ -395,7 +394,7 @@ class Config:
         }
     
     def _configure_l2_settings(self) -> Dict[str, Any]:
-        """Конфигурация специфичных для L2 настроек"""
+        """Configuring L2-specific settings"""
         return {
             "include_l1_fee": {
                 "arbitrum": get_env_bool("ARBITRUM_INCLUDE_L1_FEE", False),
@@ -408,33 +407,33 @@ class Config:
         }
     
     def print_summary(self):
-        """Вывод сводки конфигурации"""
+        """Outputting a configuration summary"""
         print("=" * 70)
-        print("GAS MONITOR - КОНФИГУРАЦИЯ")
+        print("GAS MONITOR - CONFIGURATION")
         print("=" * 70)
         
         print(f"Сети ({len(self.networks)}): {', '.join(self.networks.keys())}")
         
-        telegram_status = "Настроен" if self.telegram.is_configured() else "❌ Не настроен"
+        telegram_status = "Configured" if self.telegram.is_configured() else "Not Configured"
         print(f"Telegram: {telegram_status}")
         
-        print(f"Интервал проверки: {self.monitoring['check_interval']} сек")
-        print(f"Задержка алертов: {self.monitoring['alert_cooldown']} сек")
+        print(f"Check interval: {self.monitoring['check_interval']} sec")
+        print(f"Alert delay: {self.monitoring['alert_cooldown']} sec")
         
-        charts_status = "Включены" if self.charts["enabled"] else "Выключены"
-        print(f"📊 Графики: {charts_status}")
+        charts_status = "Turned on" if self.charts["enabled"] else "Turned off"
+        print(f" Charts: {charts_status}")
         
         if self.sniper.enabled:
-            mode = "сухой режим" if self.sniper.dry_run else "РЕАЛЬНЫЙ РЕЖИМ"
-            print(f"Снайпер: Включен ({mode})")
+            mode = "dry mode" if self.sniper.dry_run else "REAL MODE"
+            print(f"Sniper: Enabled ({mode})")
         else:
-            print(f"Снайпер: Выключен")
+            print(f"Sniper: Disabled")
         
         l2_networks = [n for n in self.networks if self.networks[n].is_l2]
         if l2_networks:
             l2_with_fee = [n for n in l2_networks 
                           if self.l2_settings["include_l1_fee"].get(n, False)]
-            print(f"L2 с L1 комиссией: {', '.join(l2_with_fee) if l2_with_fee else 'нет'}")
+            print(f"L2 with L1 commission: {', '.join(l2_with_fee) if l2_with_fee else 'no'}")
         
         print("=" * 70)
         
@@ -450,14 +449,14 @@ class Config:
         print("=" * 70)
 
 # ============================================================================
-# ГЛОБАЛЬНЫЙ ИНСТАНС КОНФИГУРАЦИИ
+# GLOBAL CONFIGURATION INSTANCE
 # ============================================================================
 
 try:
     config = Config()
-    print("Конфигурация успешно загружена")
+    print("Configuration loaded successfully")
 except Exception as e:
-    print(f"Ошибка загрузки конфигурации: {e}")
+    print(f"Configuration loading error: {e}")
     sys.exit(1)
 
 # ============================================================================
@@ -465,12 +464,12 @@ except Exception as e:
 # ============================================================================
 
 if __name__ == "__main__":
-    # Выводим сводку конфигурации
+    # Displaying a configuration summary
     config.print_summary()
     
-    # Создаем необходимые директории
+    # Create the necessary directories
     os.makedirs('logs', exist_ok=True)
     os.makedirs('charts', exist_ok=True)
     os.makedirs('data', exist_ok=True)
     
-    print("\nКонфигурация готова. Запустите: python main.py")
+    print("\nThe configuration is ready. Run: python main.py")
