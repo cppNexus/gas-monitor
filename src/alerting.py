@@ -62,6 +62,10 @@ class AlertManager:
     async def send_alert(self, **kwargs) -> bool:
         """Sending an alert"""
         try:
+            if not config.telegram.enabled:
+                logger.info("Alerts disabled; skipping send")
+                return True
+
             # Создаем объект алерта
             alert = Alert(**kwargs, timestamp=time.time())
             
@@ -81,9 +85,37 @@ class AlertManager:
         except Exception as e:
             logger.error(f"Error sending alert: {e}")
             return False
+
+    async def send_consolidated_alerts(self, alerts_data: list) -> bool:
+        """Sending multiple alerts in a single message"""
+        try:
+            if not alerts_data:
+                return True
+
+            if not config.telegram.enabled:
+                logger.info("Alerts disabled; skipping send")
+                return True
+
+            alerts = [Alert(**data, timestamp=time.time()) for data in alerts_data]
+            message = self.message_formatter.format_alerts(alerts)
+            if not message:
+                return False
+
+            success = await self._send_telegram_message(message)
+            if success:
+                logger.info("Consolidated alert sent")
+            else:
+                logger.warning("Failed to send consolidated alert")
+
+            return success
+        except Exception as e:
+            logger.error(f"Error sending consolidated alerts: {e}")
+            return False
     
     async def _send_telegram_message(self, message: str) -> bool:
         """Sending a message in Telegram"""
+        if not config.telegram.enabled:
+            return False
         if not config.telegram_bot_token or not config.telegram_chat_id:
             logger.error("The Telegram bot is not configured.")
             return False
@@ -164,6 +196,47 @@ class MessageFormatter:
             explorer_name = network_config.explorer_url.split('//')[1].split('.')[0].title()
             message += f"\n🔗 {explorer_name}: {network_config.explorer_url}/block/{alert.block_number}"
         
+        return message
+
+    def format_alerts(self, alerts: list) -> str:
+        """Formatting a consolidated alert message"""
+        if not alerts:
+            return ""
+
+        network_names = {config.networks.get(a.network).name if config.networks.get(a.network) else a.network for a in alerts}
+        network_label = network_names.pop() if len(network_names) == 1 else "Multiple Networks"
+
+        block_numbers = {a.block_number for a in alerts}
+        block_number = block_numbers.pop() if len(block_numbers) == 1 else None
+        block_line = f"Block: #{block_number}\n" if block_number is not None else ""
+
+        header = (
+            f"⛽ <b>GAS ALERTS: {network_label}</b>\n"
+            f"{block_line}"
+            f"Time: {datetime.now().strftime('%H:%M:%S')}\n"
+        )
+
+        lines = []
+        for alert in alerts:
+            emoji = self.EMOJI_MAP.get(alert.alert_type, "⛽")
+            recommendation = self.RECOMMENDATIONS.get(alert.alert_type, "")
+            line = (
+                f"{emoji} <b>{alert.alert_name}</b>: "
+                f"{alert.value:.2f} Gwei "
+                f"(threshold {alert.threshold}, base {alert.base_fee:.2f}, "
+                f"priority {alert.priority_fee:.2f}, {alert.percentile})"
+            )
+            lines.append(line)
+            if recommendation:
+                lines.append(f"<i>{recommendation}</i>")
+
+        message = header + "\n" + "\n".join(lines)
+
+        network_config = config.networks.get(alerts[0].network)
+        if network_config and network_config.explorer_url and block_number is not None:
+            explorer_name = network_config.explorer_url.split('//')[1].split('.')[0].title()
+            message += f"\n\n🔗 {explorer_name}: {network_config.explorer_url}/block/{block_number}"
+
         return message
 
 class ConfirmationManager:

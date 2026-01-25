@@ -6,6 +6,7 @@ Collects data from all networks and manages alerts.
 import asyncio
 import time
 import json
+import os
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from datetime import datetime
@@ -46,6 +47,8 @@ class GasMonitor:
         # Initializing history
         for network in config.networks:
             self.history[network] = []
+
+        self._load_history()
     
     async def init_session(self):
         """Initializing an HTTP session"""
@@ -179,18 +182,63 @@ class GasMonitor:
         """Updating data history"""
         network = gas_data.network
         self.history[network].append(gas_data)
-        
-        # Удаляем старые данные
+
+        self._prune_history(network)
+
+    def _prune_history(self, network: str):
+        """Prune history based on retention settings"""
         cutoff_time = time.time() - (config.monitoring["max_history_hours"] * 3600)
         self.history[network] = [
-            d for d in self.history[network] 
+            d for d in self.history[network]
             if d.timestamp > cutoff_time
         ]
-        
-        # Ограничиваем размер истории
+
         max_history = config.monitoring["max_history_hours"] * 3600 // config.monitoring["check_interval"]
         if len(self.history[network]) > max_history:
             self.history[network] = self.history[network][-max_history:]
+
+    def _load_history(self):
+        """Load history from backup file if present"""
+        os.makedirs("data", exist_ok=True)
+        history_path = os.path.join("data", "history_backup.json")
+        if not os.path.exists(history_path):
+            return
+
+        try:
+            with open(history_path, "r") as f:
+                raw_history = json.load(f)
+
+            for network, data_list in raw_history.items():
+                if network not in self.history or not isinstance(data_list, list):
+                    continue
+
+                items = []
+                for item in data_list:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        items.append(
+                            GasData(
+                                network=item.get("network", network),
+                                timestamp=float(item.get("timestamp", 0.0)),
+                                block_number=int(item.get("block_number", 0)),
+                                base_fee=float(item.get("base_fee", 0.0)),
+                                priority_fees=item.get("priority_fees", {}),
+                                total_fees=item.get("total_fees", {}),
+                                l1_fee=item.get("l1_fee"),
+                                l2_fee=item.get("l2_fee")
+                            )
+                        )
+                    except (TypeError, ValueError):
+                        continue
+
+                if items:
+                    self.history[network] = items
+                    self._prune_history(network)
+
+            logger.info("History loaded from backup")
+        except Exception as e:
+            logger.warning(f"Failed to load history backup: {e}")
     
     async def _process_network(self, network_name: str) -> Optional[GasData]:
         """Processing one network"""
@@ -246,6 +294,8 @@ class GasMonitor:
         
         now = time.time()
         
+        alerts_to_send = []
+
         for percentile, alert_type in percentile_mapping.items():
             # Пропускаем если для этого типа нет порога
             if alert_type not in thresholds:
@@ -268,19 +318,26 @@ class GasMonitor:
                 
                 # Проверяем cooldown
                 if now - self.last_alert_times.get(key, 0) > config.monitoring["alert_cooldown"]:
-                    # Отправляем алерт
-                    await self.alert_manager.send_alert(
-                        network=gas_data.network,
-                        alert_type=alert_type,
-                        value=value,
-                        threshold=threshold,
-                        base_fee=gas_data.base_fee,
-                        percentile=percentile,
-                        block_number=gas_data.block_number
+                    alerts_to_send.append(
+                        {
+                            "network": gas_data.network,
+                            "alert_type": alert_type,
+                            "value": value,
+                            "threshold": threshold,
+                            "base_fee": gas_data.base_fee,
+                            "percentile": percentile,
+                            "block_number": gas_data.block_number
+                        }
                     )
-                    
-                    # Обновляем время последнего алерта
-                    self.last_alert_times[key] = now
+
+        if not alerts_to_send:
+            return
+
+        sent = await self.alert_manager.send_consolidated_alerts(alerts_to_send)
+        if sent:
+            for alert in alerts_to_send:
+                key = f"{alert['network']}_{alert['alert_type']}"
+                self.last_alert_times[key] = now
     
     async def _generate_charts(self):
         """Generating graphs"""
@@ -300,6 +357,7 @@ class GasMonitor:
     async def _save_history(self):
         """Saving history to a file"""
         try:
+            os.makedirs("data", exist_ok=True)
             # Конвертируем историю в JSON-сериализуемый формат
             serializable = {}
             for network, data_list in self.history.items():

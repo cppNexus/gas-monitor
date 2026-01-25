@@ -8,7 +8,9 @@ import asyncio
 import signal
 import sys
 import logging
+import os
 from typing import Optional
+from logging.handlers import RotatingFileHandler
 
 # Импорты из нашего проекта
 from src.config import config
@@ -16,14 +18,25 @@ from src.monitor import GasMonitor
 from src.alerting import AlertManager
 from src.charts import ChartGenerator
 
+log_dir = os.path.dirname(config.logging.file_path)
+if log_dir:
+    os.makedirs(log_dir, exist_ok=True)
+
+handlers = [
+    RotatingFileHandler(
+        config.logging.file_path,
+        maxBytes=config.logging.max_bytes,
+        backupCount=config.logging.backup_count
+    )
+]
+if config.logging.console_output:
+    handlers.insert(0, logging.StreamHandler())
+
 # Настройка логирования
 logging.basicConfig(
     level=getattr(logging, config.logging.level),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(config.logging.file_path)
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 

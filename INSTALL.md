@@ -254,6 +254,25 @@ POLYGON_RPC_1=https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY
 
 ---
 
+## Additional .env Settings
+
+If you do not want Telegram notifications, disable alerts:
+
+```env
+ENABLE_ALERTS=true
+```
+
+Chart configuration:
+
+```env
+CHART_WIDTH=14
+CHART_HEIGHT=8
+CHART_DPI=150
+CHART_DIRECTORY=charts
+```
+
+---
+
 ## Verification
 
 ### 1. Test Configuration

@@ -24,7 +24,10 @@ class ChartGenerator:
     """Graph generator"""
     
     def __init__(self):
-        self.chart_dir = "charts"
+        self.chart_dir = config.charts["chart_directory"]
+        self.chart_width = config.charts["chart_width"]
+        self.chart_height = config.charts["chart_height"]
+        self.chart_dpi = config.charts["chart_dpi"]
         self.ensure_chart_dir()
         
         # Chart styles
@@ -71,7 +74,11 @@ class ChartGenerator:
                     fast_fees.append(fast)
             
             # Create a schedule
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10))
+            fig, (ax1, ax2) = plt.subplots(
+                2,
+                1,
+                figsize=(self.chart_width, self.chart_height)
+            )
             
             # Chart 1: Basic and Total Fees
             ax1.plot(timestamps, base_fees, 
@@ -149,7 +156,7 @@ class ChartGenerator:
             filename = f"{network}_gas_trend.png"
             filepath = os.path.join(self.chart_dir, filename)
             
-            plt.savefig(filepath, dpi=150, bbox_inches='tight')
+            plt.savefig(filepath, dpi=self.chart_dpi, bbox_inches='tight')
             plt.close(fig)
             
             # Очищаем старые файлы
@@ -189,7 +196,7 @@ class ChartGenerator:
                 return None
             
             # Создаем график
-            fig, ax = plt.subplots(figsize=(14, 8))
+            fig, ax = plt.subplots(figsize=(self.chart_width, self.chart_height))
             
             # Добавляем линии для каждой сети
             for network, fees in networks_data.items():
@@ -223,7 +230,7 @@ class ChartGenerator:
             filename = "all_networks_comparison.png"
             filepath = os.path.join(self.chart_dir, filename)
             
-            plt.savefig(filepath, dpi=150, bbox_inches='tight')
+            plt.savefig(filepath, dpi=self.chart_dpi, bbox_inches='tight')
             plt.close(fig)
             
             logger.info(f"Comparison chart saved: {filepath}")

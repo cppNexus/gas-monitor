@@ -70,6 +70,7 @@ class NetworkConfig:
 @dataclass
 class TelegramConfig:
     """Telegram bot configuration"""
+    enabled: bool
     bot_token: str
     chat_id: str
     parse_mode: str = "HTML"
@@ -78,6 +79,8 @@ class TelegramConfig:
     
     def is_configured(self) -> bool:
         """Checking if Telegram is configured"""
+        if not self.enabled:
+            return True
         return bool(self.bot_token and self.chat_id)
 
 @dataclass
@@ -338,6 +341,7 @@ class Config:
     def _configure_telegram(self) -> TelegramConfig:
         """Конфигурация Telegram"""
         return TelegramConfig(
+            enabled=get_env_bool("ENABLE_ALERTS", True),
             bot_token=os.getenv("TELEGRAM_BOT_TOKEN", ""),
             chat_id=os.getenv("TELEGRAM_CHAT_ID", ""),
             parse_mode=os.getenv("TELEGRAM_PARSE_MODE", "HTML"),

@@ -159,8 +159,13 @@ POLYGON_RPC_2=https://polygon.publicnode.com
 CHECK_INTERVAL=12           # Секунд между проверками
 ALERT_COOLDOWN=300         # Секунд между повторными алертами
 MAX_HISTORY_HOURS=24       # Часов хранения данных
+ENABLE_ALERTS=true         # Включить/выключить Telegram алерты
 ENABLE_CHARTS=true         # Генерировать графики
 CHART_UPDATE_INTERVAL=3600 # Секунд между обновлениями графиков
+CHART_WIDTH=14             # Ширина графика (дюймы)
+CHART_HEIGHT=8             # Высота графика (дюймы)
+CHART_DPI=150              # Разрешение графика
+CHART_DIRECTORY=charts     # Папка для графиков
 ```
 
 ## Использование

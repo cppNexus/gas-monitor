@@ -159,8 +159,13 @@ Default thresholds are configured in `config.py`. Customize per network:
 CHECK_INTERVAL=12           # Seconds between checks
 ALERT_COOLDOWN=300         # Seconds between duplicate alerts
 MAX_HISTORY_HOURS=24       # Hours of data to keep
+ENABLE_ALERTS=true         # Enable/disable Telegram alerts
 ENABLE_CHARTS=true         # Generate charts
 CHART_UPDATE_INTERVAL=3600 # Seconds between chart updates
+CHART_WIDTH=14             # Chart width (inches)
+CHART_HEIGHT=8             # Chart height (inches)
+CHART_DPI=150              # Chart resolution
+CHART_DIRECTORY=charts     # Output directory for charts
 ```
 
 ## Usage
