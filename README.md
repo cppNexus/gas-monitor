@@ -34,7 +34,6 @@
 > Example outputs generated into `charts/` (your files will reflect your own runtime data).
 
 <div align="center">
-polygon_gas_trend.png
   <img src="charts/polygon_gas_trend.png"  alt="Polygon gas trend" width="32%" />
   <img src="charts/ethereum_gas_trend.png" alt="Ethereum gas trend" width="32%" />
   <img src="charts/arbitrum_gas_trend.png" alt="Arbitrum gas trend" width="32%" />
