@@ -56,16 +56,16 @@ log/
 #*.log.*
 
 # Charts and Images
-charts/
-charts/*.png
-charts/*.jpg
-charts/*.jpeg
-charts/*.svg
-*.png
-*.jpg
-*.jpeg
-!docs/images/*.png
-!docs/images/*.jpg
+# charts/
+# charts/*.png
+# charts/*.jpg
+# charts/*.jpeg
+# charts/*.svg
+# *.png
+# *.jpg
+# *.jpeg
+# !docs/images/*.png
+# !docs/images/*.jpg
 
 # Data and Backups
 #data/
