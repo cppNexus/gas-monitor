@@ -22,11 +22,22 @@
 - Rich message formatting with network details, block numbers, and recommendations
 - Multiple alert levels: ultra_low, low, medium, high, ultra_high
 
+
 **Data Visualization**
 - Auto-generated charts with historical price trends
 - Separate graphs for base fees, priority fees, and total fees
 - Configurable update intervals and retention periods
 - Support for multiple percentiles (p10, p25, p50, p75, p90)
+
+**Sample Charts**
+
+> Example outputs generated into `charts/` (your files will reflect your own runtime data).
+
+<div align="center">
+  <img src="charts/ethereum_gas_trend.png" alt="Ethereum gas trend" width="32%" />
+  <img src="charts/arbitrum_gas_trend.png" alt="Arbitrum gas trend" width="32%" />
+  <img src="charts/optimism_gas_trend.png" alt="Optimism gas trend" width="32%" />
+</div>
 
 **Technical Features**
 - EIP-1559 transaction support with base + priority fee tracking
